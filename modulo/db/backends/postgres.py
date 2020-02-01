@@ -1,5 +1,8 @@
 from typing import Optional, Union, Dict, Tuple, Any, TYPE_CHECKING
-import aiopg
+try:
+    import aiopg
+except ImportError:
+    raise ImportError("Postgres backend require aiopg library")
 from .abstract import Abstract
 
 

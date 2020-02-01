@@ -2,6 +2,8 @@ from typing import Dict, Union
 from modulo.conf import settings
 from modulo.db.pool import Pool
 from modulo.db.backends import Abstract
+from .request import Request
+from .where import Where
 
 
 class Table():
@@ -45,3 +47,26 @@ class Table():
     def get_backend(self: Table, mode: str) -> Abstract:
         pool = self._get_pool(mode)
         return pool._backend
+    
+    def __getattr__(self: Table, key: str) -> str:
+        return f'{id(self)}.{key}'
+    
+    def select(self: Table) -> Request:
+        return Request(self, 'SELECT')
+    
+    def update(self: Table) -> Request:
+        return Request(self, 'UPDATE')
+    
+    def delete(self: Table) -> Request:
+        return Request(self, 'DELETE')
+    
+    def where(self: Table, mode: str = None) -> Where:
+        if mode is None:
+            if self._databases['read'] != self._databases['write']:
+                raise TypeError("Cannot create a where object without mode when read and write databases are not the same")
+            else:
+                mode = 'read'
+        return Where(self.get_backend(mode))
+
+    def columns(self: Table, columns: Union[str, List[str], Dict[str, str]]) -> Request:
+        return self.select().columns(columns)
