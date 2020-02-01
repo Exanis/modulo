@@ -67,8 +67,71 @@ class Postgres(Abstract):
         self._cursor.close()
         self._connection.close()
 
-    def to_sql(self: Postgres, action: str, request: Request) -> str:
-        if action == 'SELECT':
-            columns = [f'{column} AS {name}' for name, column in request._columns] if not request._count_only else ['COUNT(id) AS ']
-            joins = [f'''{j["type"]} JOIN {j["target"]} AS {id(j["target"]} ON {" AND ".join([f"{id(j['target'])}.{key} = {val}" for key, val in j["on"]])}''' for j in ]
-            order_by = 
+    @staticmethod
+    def to_sql(request: Request) -> str:
+        if request._action == 'SELECT':
+            columns = [f'{column} AS {name}' for name, column in request._columns]
+            joins = [f'{j["type"]} JOIN {j["target"]} AS {id(j["target"])} ON {" AND ".join([str(id(j["target"])) + f".{key} = {val}" for key, val in j["on"].items()])}' for j in request._join]
+            orders = [f'{order[1:] if order[0] in ["+", "-"] else order} {"DESC" if order[0] == "-" else "ASC"}' for order in request._order_by]
+            sql = f"SELECT {', '.join(columns)} FROM {request._table} AS {id(request._table)} {' '.join(joins)}"
+            where = str(request._where)
+            if where:
+                sql = f'{sql} WHERE {where}'
+            if request._group_by:
+                sql = f'{sql} GROUP BY {", ".join(request._group_by)}'
+            if orders:
+                sql = f'{sql} ORDER BY {", ".join(orders)}'
+            if request._limit >= 0:
+                sql = f'{sql} LIMIT {request._limit}'
+            if request._offset > 0:
+                sql = f'{sql} OFFSET {request._offset}'
+            return sql
+        elif request._action == 'INSERT':
+            columns = [request._columns[key] for key in request._columns]
+            params = request._params
+            placeholders = [
+                f'%({id(request)}{col})s' if not isinstance(params[col], request)
+                else params[col].sql
+                for col in request._columns
+            ]
+            sql = f"INSERT INTO {request._table} ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+            return sql
+        elif request._action == 'UPDATE':
+            params = request._params
+            updates = [
+                f"{col} = %({id(request)}{col})s" if not isinstance(params[col], Request)
+                else params[col].sql
+                for col in request._columns
+            ]
+            sql = f'UPDATE {request._table} AS {id(request._table)} SET {", ".join(updates)}'
+            where = str(request._where)
+            if where:
+                sql = f'{sql} WHERE {where}'
+            return sql
+        elif request._action == 'DELETE':
+            sql = f'DELETE FROM {request._table} AS {id(request._table}'
+            where = str(request._where)
+            if where:
+                sql = f'{sql} WHERE {where}'
+            return sql
+        else:
+            raise TypeError(f"Unsupported action for request: {request._action}")
+
+    @staticmethod
+    def to_partial_where(key: str, placeholder: str, is_list: bool = False, is_subquery: bool = False, is_none: bool = False) -> str:
+        if is_subquery:
+            return f'{key} IN ({placeholder})'
+        elif is_list:
+            return f'{key} IN (%({placeholder})s)'
+        elif is_none:
+            return f'{key} IS NULL'
+        else:
+            return f'{key} = %({placeholder})s'
+
+    @staticmethod
+    def where_and(first: str, second: str) -> str:
+        return f'({first}) AND ({second})'
+    
+    @staticmethod
+    def where_or(first: str, second: str) -> str:
+        return f'({first} OR ({second})'

@@ -34,3 +34,6 @@ class Pool():
         else:
             self._queue.put_nowait(item)
         return result
+
+    def get_backend(self: Pool) -> type:
+        return self._backend

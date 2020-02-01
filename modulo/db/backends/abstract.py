@@ -1,4 +1,4 @@
-from typing import List, Tuple, Any, TYPE_CHECKING
+from typing import List, Tuple, Any, TYPE_CHECKING, Union
 from asyncio import Queue
 
 
@@ -16,7 +16,7 @@ class Abstract():
     async def rollback(self: Abstract) -> None:
         raise NotImplementedError()
 
-    async def execute_query(self: Abstract, sql: str) -> None:
+    async def execute_query(self: Abstract, sql: str, params: Optional[Union[Tuple[Any], Dict[str, Any]]] = None) -> None:
         raise NotImplementedError()
 
     async def fetch_one(self: Abstract) -> Tuple[Any]:
@@ -31,11 +31,24 @@ class Abstract():
     async def count(self: Abstract) -> int:
         raise NotImplementedError()
 
-    async def open(self: Abstract, ***args, **kwargs) -> None:
+    async def open(self: Abstract, *args, **kwargs) -> None:
         raise NotImplementedError()
 
     async def close(self: Abstract) -> None:
         raise NotImplementedError()
 
-    def to_sql(self: Abstract, action: str, request: Request) -> None:
+    @staticmethod
+    def to_sql(request: Request) -> str:
+        raise NotImplementedError()
+
+    @staticmethod
+    def to_partial_where(key: str, placeholder: str, is_list: bool = False, is_subquery: bool = False, is_none: bool = False) -> str:
+        raise NotImplementedError()
+    
+    @staticmethod
+    def where_and(first: str, second: str) -> str:
+        raise NotImplementedError()
+    
+    @staticmethod
+    def where_or(first: str, second: str) -> str:
         raise NotImplementedError()

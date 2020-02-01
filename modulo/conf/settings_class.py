@@ -24,7 +24,7 @@ class Settings():
             raise MissingConfigurationException(f'Module {module} cannot be loaded.')
         self._values = {}
 
-    def __getattribute__(self: Settings, key: str) -> Any:
+    def __getattr__(self: Settings, key: str) -> Any:
         if key not in self._values:
             try:
                 self._values[key] = getattr(self.values, key)
