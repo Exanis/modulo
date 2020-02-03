@@ -4,10 +4,11 @@ from modulo.db.pool import Pool
 from modulo.db.backends import Abstract
 from .request import Request
 from .where import Where
+from .field import Field
 
 
 class Table():
-    _columns: Dict = {}
+    _columns: Dict[str, Field] = {}
     _databases: Dict[str, str] = {}
     _name: str = ""
     _primary: str = "id"

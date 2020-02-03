@@ -1,14 +1,21 @@
 from os import environ
+from tempfile import gettempdir()
 from typing import Any, Optional
 from importlib import import_module
 from .exceptions import MissingConfigurationException, MissingConfigurationKeyException
-from .env import env_bool, env_list
-
+from .env import env_bool, env_list, env_str
+from modulo.session.backend import File
 
 DEFAULT_SETTINGS = {
+    'APPLICATION_KEY': env_str('APPLICATION_KEY'),
     'DEBUG': env_bool('DEBUG'),
     'CUSTOM_HANDLERS': {}
     'ROUTES': []
+    'SESSION_BACKEND': File,
+    'SESSION_OPTIONS': {
+        'folder': gettempdir()
+    },
+    'SESSION_LIFETIME': 86400
 }
 
 
